@@ -160,6 +160,57 @@ func New(content string, level RecoveryLevel) (*QRCode, error) {
 	return q, nil
 }
 
+// @2017.4.7 by kolonse
+// for control color of bg and fore
+func NewWithColor(content string, level RecoveryLevel, bg, fore color.Color) (*QRCode, error) {
+	encoders := []dataEncoderType{dataEncoderType1To9, dataEncoderType10To26,
+		dataEncoderType27To40}
+
+	var encoder *dataEncoder
+	var encoded *bitset.Bitset
+	var chosenVersion *qrCodeVersion
+	var err error
+
+	for _, t := range encoders {
+		encoder = newDataEncoder(t)
+		encoded, err = encoder.encode([]byte(content))
+
+		if err != nil {
+			continue
+		}
+
+		chosenVersion = chooseQRCodeVersion(level, encoder, encoded.Len())
+
+		if chosenVersion != nil {
+			break
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	} else if chosenVersion == nil {
+		return nil, errors.New("content too long to encode")
+	}
+
+	q := &QRCode{
+		Content: content,
+
+		Level:         level,
+		VersionNumber: chosenVersion.version,
+
+		ForegroundColor: fore,
+		BackgroundColor: bg,
+
+		encoder: encoder,
+		data:    encoded,
+		version: *chosenVersion,
+	}
+
+	q.encode(chosenVersion.numTerminatorBitsRequired(encoded.Len()))
+
+	return q, nil
+}
+
 func newWithForcedVersion(content string, version int, level RecoveryLevel) (*QRCode, error) {
 	var encoder *dataEncoder
 
