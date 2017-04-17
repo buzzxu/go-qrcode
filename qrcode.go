@@ -236,10 +236,7 @@ func (q *QRCode) Image(size int) image.Image {
 	offset := (size - realSize*pixelsPerModule) / 2
 
 	rect := image.Rectangle{Min: image.Point{0, 0}, Max: image.Point{size, size}}
-
-	// Saves a few bytes to have them in this order
-	p := color.Palette([]color.Color{q.BackgroundColor, q.ForegroundColor})
-	img := image.NewPaletted(rect, p)
+	img := image.NewRGBA(rect)
 
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
@@ -272,10 +269,8 @@ func (q *QRCode) Image(size int) image.Image {
 func (q *QRCode) PNG(size int) ([]byte, error) {
 	img := q.Image(size)
 
-	encoder := png.Encoder{CompressionLevel: png.BestCompression}
-
 	var b bytes.Buffer
-	err := encoder.Encode(&b, img)
+	err := png.Encode(&b, img)
 
 	if err != nil {
 		return nil, err
